@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Models;
+using SpotifyPlaylistSaver.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,18 +12,18 @@ namespace SpotifyPlaylistSaver.Data
 {
     public class SpotifyService
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly SpotifyTokenProvider _tokenProvider;
         private SpotifyWebAPI _spotifyWebAPI;
         private string _userId;
 
-        public SpotifyService(IHttpContextAccessor httpContextAccessor)
+        public SpotifyService(SpotifyTokenProvider tokenProvider)
         {
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _tokenProvider = tokenProvider;
         }
 
         public async Task InitializeAsync()
         {
-            string access_token = await _httpContextAccessor.HttpContext.GetTokenAsync("Spotify", "access_token");
+            string access_token = _tokenProvider.AccessToken;
 
             _spotifyWebAPI = new SpotifyWebAPI
             {

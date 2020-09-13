@@ -1,4 +1,6 @@
-﻿
+﻿@using SpotifyPlaylistSaver.Authentication
+@inject SpotifyTokenProvider TokenProvider
+
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
@@ -9,3 +11,16 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code
+{
+    [Parameter]
+    public string SpotifyAccessToken { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        TokenProvider.AccessToken = SpotifyAccessToken;
+
+        return base.OnInitializedAsync();
+    }
+}

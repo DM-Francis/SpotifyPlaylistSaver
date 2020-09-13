@@ -54,6 +54,7 @@ namespace SpotifyPlaylistSaver
 
             services.AddScoped<SpotifyService>();
             services.AddHttpContextAccessor();
+            services.AddScoped<SpotifyTokenProvider>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
