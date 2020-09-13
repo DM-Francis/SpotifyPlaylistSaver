@@ -1,0 +1,35 @@
+﻿@page "/"
+@page "/spotify"
+@inject SpotifyPlaylistSaver.Data.SpotifyService SpotifyService
+
+<h3>Spotify</h3>
+
+<h1>List of Discover Weekly Tracks:</h1>
+<ul>
+    @foreach (var track in _tracks)
+    {
+        <li>
+            @track
+        </li>
+    }
+</ul>
+
+<button class="btn btn-primary" @onclick="SaveDiscoverWeeklyPlaylist">Save Discover Weekly Playlist <span class="oi oi-check" hidden="@hideCheckmark"></span></button>
+
+@code {
+    private List<string> _playlists = new List<string>();
+    private List<string> _tracks = new List<string>();
+    private bool hideCheckmark = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SpotifyService.InitializeAsync();
+        _tracks = await SpotifyService.GetDiscoverWeeklyTracks();
+    }
+
+    private async Task SaveDiscoverWeeklyPlaylist()
+    {
+        await SpotifyService.SaveDiscoverWeeklyPlaylist();
+        hideCheckmark = false;
+    }
+}
