@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <UserSecretsId>1ee4309a-1395-4d10-a58d-a8a1a786593f</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.AzureKeyVault.HostingStartup" Version="2.0.4" />
-    <PackageReference Include="SpotifyAPI.Web" Version="5.1.0" />
+    <PackageReference Include="SpotifyAPI.Web" Version="7.1.1" />
   </ItemGroup>
 
 </Project>

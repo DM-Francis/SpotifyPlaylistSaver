@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
-using SpotifyAPI.Web;
-using SpotifyAPI.Web.Models;
+﻿using SpotifyAPI.Web;
 using SpotifyPlaylistSaver.Authentication;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +9,7 @@ namespace SpotifyPlaylistSaver.Data
     public class SpotifyService
     {
         private readonly SpotifyTokenProvider _tokenProvider;
-        private SpotifyWebAPI _spotifyWebAPI;
+        private SpotifyClient _spotifyClient;
         private string _userId;
 
         public SpotifyService(SpotifyTokenProvider tokenProvider)
@@ -24,20 +20,15 @@ namespace SpotifyPlaylistSaver.Data
         public async Task InitializeAsync()
         {
             string access_token = _tokenProvider.AccessToken;
+            _spotifyClient = new SpotifyClient(access_token);
 
-            _spotifyWebAPI = new SpotifyWebAPI
-            {
-                AccessToken = access_token,
-                TokenType = "Bearer"
-            };
-
-            var profile = await _spotifyWebAPI.GetPrivateProfileAsync();
+            var profile = await _spotifyClient.UserProfile.Current();
             _userId = profile.Id;
         }
 
         public async Task<List<string>> GetPlaylistsAsync()
         {
-            Paging<SimplePlaylist> pagedPlaylists = await _spotifyWebAPI.GetUserPlaylistsAsync(_userId);
+            var pagedPlaylists = await _spotifyClient.Playlists.CurrentUsers();
 
             return pagedPlaylists.Items.Select(p => p.Name).ToList();
         }
@@ -46,14 +37,17 @@ namespace SpotifyPlaylistSaver.Data
         {
             string discoverWeeklyId = await GetDiscoverWeeklyPlaylistId();
 
-            var pagedTracks = await _spotifyWebAPI.GetPlaylistTracksAsync(discoverWeeklyId);
-            return pagedTracks.Items.Select(t => t.Track.Name).ToList();
+            var pagedTracks = await _spotifyClient.Playlists.GetItems(discoverWeeklyId);
+            return pagedTracks.Items
+                .ToFullTracks()
+                .Select(x => x.Name)
+                .ToList();
         }
 
         private async Task<string> GetDiscoverWeeklyPlaylistId()
         {
-            Paging<SimplePlaylist> pagedPlaylists = await _spotifyWebAPI.GetUserPlaylistsAsync(_userId);
-            var discoverWeeklyPl = pagedPlaylists.Items.Where(p => p.Name == "Discover Weekly").FirstOrDefault();
+            var pagedPlaylists = await _spotifyClient.Playlists.CurrentUsers();
+            var discoverWeeklyPl = pagedPlaylists.Items.FirstOrDefault(p => p.Name == "Discover Weekly");
 
             return discoverWeeklyPl?.Id;
         }
@@ -61,14 +55,17 @@ namespace SpotifyPlaylistSaver.Data
         public async Task SaveDiscoverWeeklyPlaylist()
         {
             string discoverWeeklyId = await GetDiscoverWeeklyPlaylistId();
-            var pagedTracks = await _spotifyWebAPI.GetPlaylistTracksAsync(discoverWeeklyId);
+            var pagedTracks = await _spotifyClient.Playlists.GetItems(discoverWeeklyId);
 
-            DateTime discoverCreatedate = pagedTracks.Items.Min(t => t.AddedAt);
-            List<string> trackUris = pagedTracks.Items.Select(t => t.Track.Uri).ToList();
+            var discoverCreatedate = pagedTracks.Items?.Min(x => x.AddedAt);
+            List<string> trackUris = pagedTracks.Items.ToFullTracks().Select(x => x.Uri).ToList();
 
             string newPlaylistName = $"Saved Weekly {discoverCreatedate:dd/MM/yy}";
-            var newPlaylist = await _spotifyWebAPI.CreatePlaylistAsync(_userId, newPlaylistName, isPublic: false);
-            await _spotifyWebAPI.AddPlaylistTracksAsync(newPlaylist.Id, trackUris);
+
+            var playlistCreateRequest = new PlaylistCreateRequest(newPlaylistName) { Public = false };
+            var newPlaylist = await _spotifyClient.Playlists.Create(_userId, playlistCreateRequest);
+            await _spotifyClient.Playlists.AddItems(newPlaylist.Id, new PlaylistAddItemsRequest(trackUris));
         }
+
     }
 }
